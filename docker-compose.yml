@@ -1,0 +1,296 @@
+services:
+  # ──────────────────────────────────────────────
+  # CORE: MongoDB (partilhado por Orion-LD e IoT Agent)
+  # ──────────────────────────────────────────────
+  mongodb:
+    image: mongo:4.4
+    container_name: mongodb
+    hostname: mongodb
+    networks:
+      - fiware
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: mongo --eval "db.adminCommand('ping')" --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # CORE: Orion-LD Context Broker
+  # ──────────────────────────────────────────────
+  orion:
+    image: fiware/orion-ld:1.10.0
+    container_name: orion
+    hostname: orion
+    networks:
+      - fiware
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "1026:1026"
+    command: -dbhost mongodb -logLevel WARN -forwarding -corsOrigin __ALL
+    healthcheck:
+      test: curl -sf http://localhost:1026/ngsi-ld/ex/v1/version || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # HISTÓRICO: CrateDB (backend do QuantumLeap)
+  # ──────────────────────────────────────────────
+  cratedb:
+    image: crate:3.3.5
+    container_name: cratedb
+    hostname: cratedb
+    networks:
+      - fiware
+    ports:
+      - "4200:4200"
+    environment:
+      - CRATE_HEAP_SIZE=512m
+    volumes:
+      - cratedb_data:/data
+    command: >
+      crate
+      -Cnetwork.host=0.0.0.0
+      -Cdiscovery.type=single-node
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4200"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # HISTÓRICO: QuantumLeap (persiste time series no CrateDB)
+  # ──────────────────────────────────────────────
+  quantumleap:
+    image: orchestracities/quantumleap:0.7.5
+    container_name: quantumleap
+    hostname: quantumleap
+    networks:
+      - fiware
+    depends_on:
+      cratedb:
+        condition: service_healthy
+    ports:
+      - "8668:8668"
+    environment:
+      - CRATE_HOST=cratedb
+      - CRATE_PORT=4200
+      - USE_GEOCODING=false
+      - LOGLEVEL=WARNING
+    healthcheck:
+      test: curl -sf http://localhost:8668/version || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # MQTT: Mosquitto broker
+  # ──────────────────────────────────────────────
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    hostname: mosquitto
+    networks:
+      - fiware
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: mosquitto_pub -h localhost -t "health" -m "ok" -q 1 || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # CONTEXT: Servidor de @context JSON-LD
+  # Necessário para NGSI-LD — o IoT Agent e o Orion
+  # precisam de resolver o @context via HTTP.
+  # ──────────────────────────────────────────────
+  context-server:
+    image: nginx:alpine
+    container_name: context-server
+    hostname: context-server
+    networks:
+      - fiware
+    ports:
+      - "3004:80"
+    volumes:
+      - ./context:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # IOT: IoT Agent for JSON (MQTT → NGSI-LD)
+  # ──────────────────────────────────────────────
+  iot-agent:
+    image: quay.io/fiware/iotagent-json:latest
+    container_name: iot-agent
+    hostname: iot-agent
+    networks:
+      - fiware
+    depends_on:
+      orion:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "4041:4041"
+    environment:
+      - IOTA_CB_HOST=orion
+      - IOTA_CB_PORT=1026
+      - IOTA_CB_NGSI_VERSION=ld
+      - IOTA_JSON_LD_CONTEXT=http://context-server/campus-context.jsonld
+      - IOTA_FALLBACK_TENANT=smartcampus
+      - IOTA_NORTH_PORT=4041
+      - IOTA_REGISTRY_TYPE=mongodb
+      - IOTA_MONGO_URI=mongodb://mongodb:27017/iotagentjson
+      - IOTA_LOG_LEVEL=DEBUG
+      - IOTA_TIMESTAMP=true
+      - IOTA_AUTOCAST=true
+      - IOTA_MQTT_HOST=mosquitto
+      - IOTA_MQTT_PORT=1883
+      - IOTA_DEFAULT_RESOURCE=/iot/json
+      - IOTA_PROVIDER_URL=http://iot-agent:4041
+      - IOTA_AMQP_DISABLED=true
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4041/iot/about', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # INTEGRAÇÃO: Poller Open-Meteo → Orion
+  # ──────────────────────────────────────────────
+  poller:
+    build: ./poller
+    container_name: poller
+    hostname: poller
+    networks:
+      - fiware
+    depends_on:
+      orion:
+        condition: service_healthy
+    environment:
+      - ORION_URL=http://orion:1026
+      - CONTEXT_URL=http://context-server/campus-context.jsonld
+      - CAMPUS_LAT=39.6024 # coordenadas IPT Tomar
+      - CAMPUS_LON=-8.4130
+      - POLL_INTERVAL=300
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # SIMULAÇÃO: Simulador de sensores via MQTT
+  # Substituir pelo leitor real quando disponível
+  # ──────────────────────────────────────────────
+  simulator:
+    build: ./simulator
+    container_name: simulator
+    hostname: simulator
+    networks:
+      - fiware
+    depends_on:
+      iot-agent:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - SIMULATE_INTERVAL=60
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # MONITORING: Prometheus
+  # ──────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    hostname: prometheus
+    networks:
+      - fiware
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox-exporter
+    hostname: blackbox-exporter
+    networks:
+      - fiware
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # MONITORING: Node Exporter (métricas do host)
+  # ──────────────────────────────────────────────
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    hostname: node-exporter
+    networks:
+      - fiware
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # MONITORING + DASHBOARD: Grafana
+  # Visualiza time series do CrateDB e métricas do Prometheus
+  # ──────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    hostname: grafana
+    networks:
+      - fiware
+    depends_on:
+      - cratedb
+      - prometheus
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin # mudar em produção
+      - GF_INSTALL_PLUGINS=
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    restart: unless-stopped
+
+networks:
+  fiware:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  cratedb_data:
+  prometheus_data:
+  grafana_data:
