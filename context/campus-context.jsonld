@@ -1,0 +1,32 @@
+{
+  "@context": {
+    "schema": "https://schema.org/",
+    "fiware": "https://uri.fiware.org/ns/data-models#",
+    "smartcampus": "https://ipt.pt/smart-campus/context#",
+
+    "Building":               "fiware:Building",
+    "Room":                   "fiware:Room",
+    "WeatherObserved":        "fiware:WeatherObserved",
+    "IndoorEnvironmentObserved": "smartcampus:IndoorEnvironmentObserved",
+    "EnergyConsumptionSensor": "smartcampus:EnergyConsumptionSensor",
+
+    "name":                   "schema:name",
+    "description":            "schema:description",
+    "location":               "https://uri.etsi.org/ngsi-ld/location",
+    "observedAt":             "https://uri.etsi.org/ngsi-ld/observedAt",
+
+    "temperature":            "https://w3id.org/saref#hasValue",
+    "humidity":               "smartcampus:humidity",
+    "pressure":               "smartcampus:pressure",
+    "windSpeed":              "smartcampus:windSpeed",
+    "precipitation":          "smartcampus:precipitation",
+    "powerConsumption":       "smartcampus:powerConsumption",
+    "co2":                    "smartcampus:co2",
+
+    "refBuilding":            "smartcampus:refBuilding",
+    "refRoom":                "smartcampus:refRoom",
+    "floor":                  "smartcampus:floor",
+    "capacity":               "smartcampus:capacity",
+    "occupied":               "smartcampus:occupied"
+  }
+}
