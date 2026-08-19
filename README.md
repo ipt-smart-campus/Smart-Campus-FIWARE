@@ -57,9 +57,11 @@ chmod +x bootstrap.sh
 ## Verificar que funciona
 
 ```bash
-# Entidades no Orion
-curl -s http://localhost:1026/ngsi-ld/v1/entities \
-  -H "Accept: application/ld+json" | jq .
+# Entidades no Orion (com contexto para nomes curtos)
+curl -s "http://localhost:1026/ngsi-ld/v1/entities?type=WeatherObserved" \
+  -H "Accept: application/json" \
+  -H "NGSILD-Tenant: smartcampus" \
+  -H 'Link: <http://context-server/campus-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' | jq .
 
 # Histórico no QuantumLeap
 curl -s "http://localhost:8668/v2/entities/urn:ngsi-ld:WeatherObserved:IPT-Campus-001/attrs/temperature"
