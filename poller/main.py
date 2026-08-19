@@ -17,6 +17,7 @@ CONTEXT_URL   = os.environ.get("CONTEXT_URL", "http://context-server/campus-cont
 CAMPUS_LAT    = float(os.environ.get("CAMPUS_LAT", "39.6024"))
 CAMPUS_LON    = float(os.environ.get("CAMPUS_LON", "-8.4130"))
 POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "300"))
+TENANT        = os.environ.get("FIWARE_TENANT", "smartcampus")
 
 ENTITY_ID = "urn:ngsi-ld:WeatherObserved:IPT-Campus-001"
 
@@ -29,9 +30,18 @@ OPEN_METEO_PARAMS = {
     "timezone": "Europe/Lisbon",
 }
 
-HEADERS = {
+# Headers base — o @context vai no header Link, não no body
+HEADERS_JSON_LD = {
     "Content-Type": "application/ld+json",
     "Accept": "application/ld+json",
+    "NGSILD-Tenant": TENANT,
+}
+
+# Para PATCH de atributos o Content-Type é application/ld+json
+# e o @context vai no body (é obrigatório no PATCH)
+HEADERS_PATCH = {
+    "Content-Type": "application/ld+json",
+    "NGSILD-Tenant": TENANT,
 }
 
 
@@ -87,30 +97,43 @@ def build_entity(weather: dict) -> dict:
     }
 
 
+def build_attrs(entity: dict) -> dict:
+    """Extrai só os atributos para o PATCH (sem id e type, com @context)."""
+    attrs = {k: v for k, v in entity.items() if k not in ("id", "type")}
+    return attrs  # @context já vem do build_entity
+
+
 def upsert_entity(entity: dict):
     url_patch = f"{ORION_URL}/ngsi-ld/v1/entities/{ENTITY_ID}/attrs"
-    attrs = {k: v for k, v in entity.items() if k not in ("id", "type")}
-    attrs["@context"] = CONTEXT_URL
+    attrs = build_attrs(entity)
 
-    resp = requests.patch(url_patch, json=attrs, headers=HEADERS, timeout=10)
+    resp = requests.patch(url_patch, json=attrs, headers=HEADERS_PATCH, timeout=10)
+    log.debug("PATCH %s → %s %s", url_patch, resp.status_code, resp.text[:300])
 
     if resp.status_code == 404:
+        # Entidade não existe ainda — cria
         resp = requests.post(
             f"{ORION_URL}/ngsi-ld/v1/entities",
             json=entity,
-            headers=HEADERS,
+            headers=HEADERS_JSON_LD,
             timeout=10,
         )
-        resp.raise_for_status()
-        log.info("Entidade criada: %s", ENTITY_ID)
-    elif resp.status_code not in (200, 204, 207):
-        log.error("Erro ao atualizar entidade: %s %s", resp.status_code, resp.text)
+        if resp.status_code in (200, 201):
+            log.info("Entidade criada: %s (tenant: %s)", ENTITY_ID, TENANT)
+        else:
+            log.error("Erro ao criar entidade: %s %s", resp.status_code, resp.text)
+            resp.raise_for_status()
+    elif resp.status_code in (200, 204, 207):
+        log.info("Entidade atualizada: %s (tenant: %s)", ENTITY_ID, TENANT)
     else:
-        log.info("Entidade atualizada: %s", ENTITY_ID)
+        log.error("Erro ao atualizar entidade: %s %s", resp.status_code, resp.text)
 
 
 def main():
-    log.info("Poller iniciado. Intervalo: %ds | Campus: %.4f, %.4f", POLL_INTERVAL, CAMPUS_LAT, CAMPUS_LON)
+    log.info(
+        "Poller iniciado. Intervalo: %ds | Campus: %.4f, %.4f | Tenant: %s",
+        POLL_INTERVAL, CAMPUS_LAT, CAMPUS_LON, TENANT,
+    )
     while True:
         try:
             weather = fetch_weather()
