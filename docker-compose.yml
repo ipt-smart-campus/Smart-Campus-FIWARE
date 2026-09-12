@@ -86,10 +86,11 @@ services:
       - USE_GEOCODING=false
       - LOGLEVEL=WARNING
     healthcheck:
-      test: curl -sf http://localhost:8668/version || exit 1
-      interval: 15s
-      timeout: 5s
+      test: ["CMD", "curl", "-sf", "http://localhost:8668/v2/version"]
+      interval: 20s
+      timeout: 10s
       retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   # ──────────────────────────────────────────────
@@ -156,7 +157,7 @@ services:
       - IOTA_NORTH_PORT=4041
       - IOTA_REGISTRY_TYPE=mongodb
       - IOTA_MONGO_URI=mongodb://mongodb:27017/iotagentjson
-      - IOTA_LOG_LEVEL=DEBUG
+      - IOTA_LOG_LEVEL=WARN
       - IOTA_TIMESTAMP=true
       - IOTA_AUTOCAST=true
       - IOTA_MQTT_HOST=mosquitto
@@ -279,10 +280,10 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin # mudar em produção
-      - GF_INSTALL_PLUGINS=
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     restart: unless-stopped
 
 networks:
