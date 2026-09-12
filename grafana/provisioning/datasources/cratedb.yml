@@ -1,0 +1,13 @@
+apiVersion: 1
+datasources:
+  - name: CrateDB
+    uid: afw5lhb0ksruob
+    type: postgres
+    url: cratedb:5432
+    user: crate
+    jsonData:
+      sslmode: disable
+      postgresVersion: 900
+      database: doc
+    isDefault: true
+    overwrite: true

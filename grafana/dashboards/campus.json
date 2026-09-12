@@ -1,0 +1,234 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": { "calcs": ["last", "min", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+          "format": "time_series",
+          "rawSql": "SELECT time_index AS time, temperature::double AS \"Sala 101\" FROM doc.etindoorenvironmentobserved WHERE entity_id = 'urn:ngsi-ld:IndoorEnvironmentObserved:sensor-temp-sala101' AND $__timeFilter(time_index) ORDER BY time_index ASC",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+          "format": "time_series",
+          "rawSql": "SELECT time_index AS time, temperature::double AS \"Sala 201\" FROM doc.etindoorenvironmentobserved WHERE entity_id = 'urn:ngsi-ld:IndoorEnvironmentObserved:sensor-temp-sala201' AND $__timeFilter(time_index) ORDER BY time_index ASC",
+          "refId": "B"
+        }
+      ],
+      "title": "Temperatura Interior",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": {
+        "legend": { "calcs": ["last", "min", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+          "format": "time_series",
+          "rawSql": "SELECT time_index AS time, humidity::double AS \"Sala 101\" FROM doc.etindoorenvironmentobserved WHERE entity_id = 'urn:ngsi-ld:IndoorEnvironmentObserved:sensor-temp-sala101' AND $__timeFilter(time_index) ORDER BY time_index ASC",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+          "format": "time_series",
+          "rawSql": "SELECT time_index AS time, humidity::double AS \"Sala 201\" FROM doc.etindoorenvironmentobserved WHERE entity_id = 'urn:ngsi-ld:IndoorEnvironmentObserved:sensor-temp-sala201' AND $__timeFilter(time_index) ORDER BY time_index ASC",
+          "refId": "B"
+        }
+      ],
+      "title": "Humidade Interior",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "ppm"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "options": {
+        "legend": { "calcs": ["last", "min", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+          "format": "time_series",
+          "rawSql": "SELECT time_index AS time, co2::double AS \"Sala 101\" FROM doc.etindoorenvironmentobserved WHERE entity_id = 'urn:ngsi-ld:IndoorEnvironmentObserved:sensor-temp-sala101' AND $__timeFilter(time_index) ORDER BY time_index ASC",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+          "format": "time_series",
+          "rawSql": "SELECT time_index AS time, co2::double AS \"Sala 201\" FROM doc.etindoorenvironmentobserved WHERE entity_id = 'urn:ngsi-ld:IndoorEnvironmentObserved:sensor-temp-sala201' AND $__timeFilter(time_index) ORDER BY time_index ASC",
+          "refId": "B"
+        }
+      ],
+      "title": "CO₂ Interior",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "options": {
+        "legend": { "calcs": ["last", "min", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+          "format": "time_series",
+          "rawSql": "SELECT time_index AS time, temperature::double AS \"Temperatura Exterior\" FROM doc.etweatherobserved WHERE $__timeFilter(time_index) ORDER BY time_index ASC",
+          "refId": "A"
+        }
+      ],
+      "title": "Temperatura Exterior (Open-Meteo)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "velocityms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "options": {
+        "legend": { "calcs": ["last", "min", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "afw5lhb0ksruob" },
+          "format": "time_series",
+          "rawSql": "SELECT time_index AS time, windspeed::double AS \"Vento (m/s)\" FROM doc.etweatherobserved WHERE $__timeFilter(time_index) ORDER BY time_index ASC",
+          "refId": "A"
+        }
+      ],
+      "title": "Vento Exterior (Open-Meteo)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "afw5kqyrsdh4wd" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 1, "fillOpacity": 5 },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "id": 7,
+      "options": {
+        "legend": { "calcs": ["last"], "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "afw5kqyrsdh4wd" },
+          "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[2m]))",
+          "legendFormat": "CPU Usage",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Host",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "afw5kqyrsdh4wd" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 1, "fillOpacity": 5 },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "id": 8,
+      "options": {
+        "legend": { "calcs": ["last"], "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "afw5kqyrsdh4wd" },
+          "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+          "legendFormat": "RAM Usada",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "afw5kqyrsdh4wd" },
+          "expr": "node_memory_MemTotal_bytes",
+          "legendFormat": "RAM Total",
+          "refId": "B"
+        }
+      ],
+      "title": "Memória RAM Host",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["smart-campus", "fiware", "ipt"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "Europe/Lisbon",
+  "title": "Smart Campus IPT — FIWARE",
+  "uid": "smart-campus-ipt",
+  "version": 1
+}

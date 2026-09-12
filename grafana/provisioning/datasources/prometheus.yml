@@ -1,0 +1,9 @@
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: afw5kqyrsdh4wd
+    type: prometheus
+    url: http://prometheus:9090
+    jsonData:
+      httpMethod: POST
+    overwrite: true
